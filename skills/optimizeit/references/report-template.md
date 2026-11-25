@@ -88,7 +88,7 @@ Status vocabulary (use exactly these labels):
 | Build | | | |
 | Behavior equivalence | | — | |
 
-<Checks that do not exist in the project or were not run are listed as "not available" / "not run" with the reason. Explain any failure and whether it pre-existed.>
+<Use these labels for checks that did not run normally: "not available" (the project has no such check), "not run (tool not installed)", "manual invocation" (test functions called directly, not through the runner). Never write "passed" for a check that was not run through its runner. Explain any failure and whether it pre-existed.>
 
 ## 9. Remaining Issues
 

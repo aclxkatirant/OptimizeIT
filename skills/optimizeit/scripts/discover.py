@@ -18,6 +18,7 @@ import argparse
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
 from collections import Counter, defaultdict
@@ -655,6 +656,14 @@ def scan(root):
     return report
 
 
+def tool_installed(root, command):
+    """Whether the first word of a candidate command resolves to an executable."""
+    tool = command.split()[0]
+    if tool.startswith("./"):
+        return "yes" if os.path.exists(os.path.join(root, tool[2:])) else "no"
+    return "yes" if shutil.which(tool) else "no"
+
+
 def to_dict(report, top):
     total_lines = sum(report.language_lines.values()) or 1
     languages = [
@@ -678,7 +687,7 @@ def to_dict(report, top):
         "lint_tools": sorted(report.detected.get("lint", ())),
         "dependency_counts": report.dependency_counts,
         "entry_points": sorted(set(report.entry_points))[:50],
-        "commands": report.commands,
+        "commands": [dict(c, tool_installed=tool_installed(report.root, c["command"])) for c in report.commands],
         "ci": sorted(report.ci),
         "notes": report.notes,
         "largest_source_files": [
@@ -712,10 +721,10 @@ def print_markdown(data):
     out.append("")
 
     sections = [
-        ("Frameworks", "frameworks"), ("Libraries of interest", "libraries"),
+        ("Frameworks (declared)", "frameworks"), ("Libraries of interest (declared)", "libraries"),
         ("Build tools", "build_tools"), ("Build systems / manifests", "build_systems"),
-        ("Package managers (lockfiles)", "package_managers"), ("Databases and data stores", "databases"),
-        ("External services", "external_services"), ("Test tools", "test_tools"),
+        ("Package managers (lockfiles)", "package_managers"), ("Databases and data stores (declared)", "databases"),
+        ("External services (declared)", "external_services"), ("Test tools", "test_tools"),
         ("Lint / type-check tools", "lint_tools"), ("Entry point candidates", "entry_points"),
         ("CI configuration", "ci"), ("Version notes", "notes"),
     ]
@@ -737,10 +746,10 @@ def print_markdown(data):
 
     out.append("## Candidate commands (verify before running)")
     if data["commands"]:
-        out.append("| Kind | Command | Source |")
-        out.append("|---|---|---|")
+        out.append("| Kind | Command | Tool installed? | Source |")
+        out.append("|---|---|---|---|")
         for c in data["commands"]:
-            out.append("| %s | `%s` | %s |" % (c["kind"], c["command"], c["source"]))
+            out.append("| %s | `%s` | %s | %s |" % (c["kind"], c["command"], c["tool_installed"], c["source"]))
     else:
         out.append("_none detected_")
     out.append("")
@@ -751,7 +760,8 @@ def print_markdown(data):
     else:
         out.append("_none detected_")
     out.append("")
-    out.append("> Heuristic output. Verify by reading the manifests and entry points before drawing conclusions.")
+    out.append("> Heuristic output. \"Declared\" means listed in a manifest, not necessarily imported or used.")
+    out.append("> Entry points are incomplete. Verify by reading the manifests and code before drawing conclusions.")
     print("\n".join(out))
 
 

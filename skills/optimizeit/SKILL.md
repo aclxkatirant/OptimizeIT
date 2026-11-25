@@ -61,7 +61,7 @@ Goal: understand the application before changing it.
    python <skill-dir>/scripts/discover.py <project-dir>
    ```
    It reports languages, frameworks/libraries, package managers, build systems, entry points, database technologies, external services, test/lint/typecheck/build commands and the largest source files.
-2. **Verify** the output: actually read the manifests (`package.json`, `pyproject.toml`, `composer.json`, `pom.xml`, `*.csproj`, `go.mod`, `Cargo.toml`, ...) and the entry points.
+2. **Verify** the output: actually read the manifests (`package.json`, `pyproject.toml`, `composer.json`, `pom.xml`, `*.csproj`, `go.mod`, `Cargo.toml`, ...) and the entry points. The script reports *declared* dependencies and *candidate* commands: confirm that a framework or database is actually imported/used in code before treating it as part of the stack, and find runnable entry points (scripts, `__main__` guards, CLI commands) by reading, since the script's list is incomplete.
 3. Map the architecture: layers, internal module dependencies, request lifecycle, data flow, background jobs, external integrations.
 4. Trace the target bottleneck path (the flow the user complains about) end to end.
 5. Check `git status`. If the user has uncommitted changes, do not overwrite them; report the state.
@@ -78,14 +78,14 @@ Goal: find real bottlenecks, not merely suspicious patterns.
    - Frontend present → `references/frontend.md`
    - Backend/service present → `references/backend.md`
    - Language/framework-specific patterns and profilers → `references/languages-and-frameworks.md`
-3. **Profile** when possible (CPU profile, heap snapshot, query log, `EXPLAIN`, bundle analysis). A profile beats a guess.
+3. **Profile** when possible (CPU profile, heap snapshot, query log, `EXPLAIN`, bundle analysis). A profile beats a guess. When the code is small and the cause is evident from reading, a measured baseline of the suspect path (Phase 4) may stand in for a profile; say so in the report.
 4. Judge every suspicious pattern **in context**:
    - Is it on a hot path (called often, per request, inside a loop)?
    - How large is the data really? (O(n²) on a 10-item list is not a problem.)
    - Is the impact measurable or only theoretical?
 5. Record each finding in the **Finding Format** below.
 
-**Gate:** A finding whose real impact has not been assessed is labeled "unverified suspicion" and cannot be rated CRITICAL or HIGH.
+**Gate:** A finding whose real impact has not been assessed is rated at most MEDIUM, and its Performance impact field starts with "Unverified:".
 
 ### Phase 3 — Prioritization
 
@@ -111,15 +111,16 @@ Goal: pin down the "before" value with evidence.
    ```
    python <skill-dir>/scripts/measure.py run --name before --runs 10 --warmup 2 --output .optimizeit/before.json -- <command>
    ```
-4. If measurement is impossible (no data, no service, no environment), record that and why. The improvement is then reported as **"not measured"**.
+4. If the measured time is dominated by process startup (the slow code runs for a few milliseconds), loop the code in-process inside the harness so the measurement reflects the code under test, not interpreter or runtime startup.
+5. If measurement is impossible (no data, no service, no environment), record that and why. The improvement is then reported as **"not measured"**.
 
-Keep measurement files in the target project under `.optimizeit/`; ask the user whether that folder should be committed.
+`.optimizeit/` in the target project is OptimizeIT's working folder for measurements, harnesses and the report. Create it without asking; do not edit `.gitignore` or commit it. Phase 8 tells the user it is there.
 
 ### Phase 5 — Optimization
 
 1. Implement **one finding at a time**; keep changes small and reviewable.
 2. Before changing code, find affected modules, callers and tests (search for every usage).
-3. Preserve behavior: same inputs → same outputs, same error cases, same side effects, same ordering (when ordering is part of the contract).
+3. Preserve behavior: same inputs → same outputs, same error cases, same side effects, same ordering (when ordering is part of the contract). If the new code relies on an assumption the old code did not (hashable or comparable values, stable ordering, immutability, thread safety, non-null input), check that every caller satisfies it, or keep a fallback path for inputs that do not, and record the assumption under Implementation risk.
 4. When adding a cache: define invalidation, size bound, TTL, concurrency behavior, and the risk of leaking per-user data.
 5. When adding concurrency: check shared state, races, ordering guarantees, error propagation and resource limits (connection pools, rate limits).
 6. Record the justification of each change in its finding.
@@ -135,6 +136,7 @@ After each change (or coherent group of changes), run whatever the project **act
 - targeted validation of the modified component (e.g. a comparison showing old and new implementations return identical results for identical inputs)
 
 Rules:
+- If a candidate command's tool is not installed, do not install it without asking; record the check as "not run (tool not installed)". Calling test functions directly is allowed, but report it as "manual invocation", never as "tests passed".
 - If a test fails, first check **whether it failed before the optimization** (stash the change or compare with earlier results). If it was already failing, report it as a pre-existing bug.
 - **Do not declare the task complete while a regression you introduced remains.** If it cannot be fixed, revert the change and report it.
 - With no test infrastructure, write a temporary behavior-comparison script for the modified function (in a scratch location; do not add permanent files to the project without permission).
@@ -167,7 +169,9 @@ Produce the report from `references/report-template.md`. Ten required sections:
 
 The report **clearly separates** four states: *discovered* / *implemented* / *validated* / *recommended (not implemented)*.
 
-Show the report to the user and save it in the target project as `.optimizeit/REPORT.md`.
+Show the report to the user and save it in the target project as `.optimizeit/REPORT.md`. Tell the user that `.optimizeit/` is untracked and that they can commit it or add it to `.gitignore`.
+
+Scale the report to the work: every section is required, but a section with nothing to say is one line ("No schema changes.").
 
 ## Finding Format
 
@@ -184,6 +188,8 @@ Every finding contains **all** of these fields:
 - **Implemented:** Yes / No (why) / Awaiting approval
 - **Validation result:** Commands run and their results / "not validated"
 ```
+
+For INFORMATIONAL findings, "Performance impact" and "Validation result" may be "n/a".
 
 ## Red Flags — STOP
 

@@ -1,12 +1,12 @@
 {
   "name": "optimizeit",
   "version": "1.0.0",
-  "description": "Mevcut uygulamaları analiz eden, darboğazları bulan, güvenli optimizasyonlar uygulayan, test eden, ölçen ve raporlayan yazılım optimizasyon skill'i.",
+  "description": "Software optimization skill that analyzes existing applications, finds bottlenecks, applies safe optimizations, then validates, measures and reports.",
   "author": {
     "name": "katirant"
   },
   "homepage": "https://github.com/aclxkatirant/OptimizeIT",
   "repository": "https://github.com/aclxkatirant/OptimizeIT",
   "license": "MIT",
-  "keywords": ["performance", "optimization", "profiling", "benchmark", "performans", "optimizasyon"]
+  "keywords": ["performance", "optimization", "profiling", "benchmark", "bottleneck"]
 }

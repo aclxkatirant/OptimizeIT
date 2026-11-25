@@ -1,49 +1,49 @@
 <#
 .SYNOPSIS
-  OptimizeIT kurulum betiği (Windows PowerShell 5.1+ / PowerShell 7+)
+  OptimizeIT installer (Windows PowerShell 5.1+ / PowerShell 7+)
 
 .EXAMPLE
-  .\install.ps1                              # tüm ajanlara, kullanıcı düzeyinde
+  .\install.ps1                              # all agents, user level
 .EXAMPLE
-  .\install.ps1 -Hedef cursor                # yalnızca Cursor, kullanıcı düzeyinde
+  .\install.ps1 -Target cursor               # Cursor only, user level
 .EXAMPLE
-  .\install.ps1 -Hedef claude -Proje .       # yalnızca Claude Code, bu projeye
+  .\install.ps1 -Target claude -Project .    # Claude Code only, this project
 #>
 param(
-    [ValidateSet('claude', 'codex', 'cursor', 'gemini', 'hepsi')]
-    [string]$Hedef = 'hepsi',
-    [string]$Proje = ''
+    [ValidateSet('claude', 'codex', 'cursor', 'gemini', 'all')]
+    [string]$Target = 'all',
+    [string]$Project = ''
 )
 
 $ErrorActionPreference = 'Stop'
 
-$kaynak = Join-Path $PSScriptRoot 'skills\optimizeit'
-if (-not (Test-Path (Join-Path $kaynak 'SKILL.md'))) {
-    throw "Skill bulunamadı: $kaynak"
+$source = Join-Path $PSScriptRoot 'skills\optimizeit'
+if (-not (Test-Path (Join-Path $source 'SKILL.md'))) {
+    throw "Skill not found: $source"
 }
 
-if ($Proje) {
-    $kok = (Resolve-Path $Proje).Path
+if ($Project) {
+    $base = (Resolve-Path $Project).Path
 } else {
-    $kok = $HOME
+    $base = $HOME
 }
 
-$dizinler = [ordered]@{
-    claude = @{ Ad = 'Claude Code'; Yol = Join-Path $kok '.claude\skills' }
-    codex  = @{ Ad = 'Codex';       Yol = Join-Path $kok '.agents\skills' }
-    cursor = @{ Ad = 'Cursor';      Yol = Join-Path $kok '.cursor\skills' }
-    gemini = @{ Ad = 'Gemini CLI';  Yol = Join-Path $kok '.gemini\skills' }
+$agents = [ordered]@{
+    claude = @{ Label = 'Claude Code'; Dir = Join-Path $base '.claude\skills' }
+    codex  = @{ Label = 'Codex';       Dir = Join-Path $base '.agents\skills' }
+    cursor = @{ Label = 'Cursor';      Dir = Join-Path $base '.cursor\skills' }
+    gemini = @{ Label = 'Gemini CLI';  Dir = Join-Path $base '.gemini\skills' }
 }
 
-if ($Hedef -eq 'hepsi') { $secilenler = @($dizinler.Keys) } else { $secilenler = @($Hedef) }
+if ($Target -eq 'all') { $selected = @($agents.Keys) } else { $selected = @($Target) }
 
-foreach ($anahtar in $secilenler) {
-    $bilgi = $dizinler[$anahtar]
-    $hedefDizin = Join-Path $bilgi.Yol 'optimizeit'
-    New-Item -ItemType Directory -Force -Path $bilgi.Yol | Out-Null
-    if (Test-Path $hedefDizin) { Remove-Item -Recurse -Force $hedefDizin }
-    Copy-Item -Recurse -Path $kaynak -Destination $hedefDizin
-    Write-Host "[$($bilgi.Ad)] kuruldu: $hedefDizin"
+foreach ($key in $selected) {
+    $agent = $agents[$key]
+    $dest = Join-Path $agent.Dir 'optimizeit'
+    New-Item -ItemType Directory -Force -Path $agent.Dir | Out-Null
+    if (Test-Path $dest) { Remove-Item -Recurse -Force $dest }
+    Copy-Item -Recurse -Path $source -Destination $dest
+    Write-Host "[$($agent.Label)] installed: $dest"
 }
 
-Write-Host 'Tamamlandı. Ajanı yeniden başlatın (Gemini CLI''da: /skills reload).'
+Write-Host 'Done. Restart your agent (in Gemini CLI: /skills reload).'

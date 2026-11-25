@@ -1,108 +1,108 @@
 # OptimizeIT
 
-Mevcut bir uygulamayı **işlevini bozmadan** daha hızlı, daha az kaynak tüketen ve daha kararlı hâle getiren yapay zekâ ajan skill'i.
+An AI agent skill that makes an existing application faster, lighter and more stable **without breaking its functionality**.
 
-OptimizeIT bir "en iyi pratikler" listesi değildir. Projeyi tanır, gerçek darboğazları bulur, önceliklendirir, temel ölçüm alır, hedefli optimizasyonlar uygular, test/lint/build ile doğrular, aynı koşullarda yeniden ölçer ve ayrıntılı bir rapor üretir.
+OptimizeIT is not a best-practices checklist. It learns the project, finds the real bottlenecks, prioritizes them, takes a baseline, applies targeted optimizations, validates them with tests/lint/type checks/builds, re-measures under the same conditions and produces a detailed report.
 
-**Analiz eder → optimize eder → test eder → ölçer → raporlar.**
+**Analyze → optimize → test → measure → report.**
 
-## Desteklenen Ajanlar
+## Supported Agents
 
-| Ajan | Kullanıcı düzeyi dizin | Proje düzeyi dizin | Alternatif |
+| Agent | User-level directory | Project-level directory | Alternative |
 |---|---|---|---|
-| Claude Code | `~/.claude/skills/optimizeit` | `.claude/skills/optimizeit` | Plugin olarak kurulum |
-| Codex | `~/.agents/skills/optimizeit` | `.agents/skills/optimizeit` | Eski sürümler: `~/.codex/skills` |
-| Cursor | `~/.cursor/skills/optimizeit` | `.cursor/skills/optimizeit` | Cursor `.claude/skills` dizinini de okur |
-| Gemini CLI | `~/.gemini/skills/optimizeit` | `.gemini/skills/optimizeit` | Extension olarak kurulum |
+| Claude Code | `~/.claude/skills/optimizeit` | `.claude/skills/optimizeit` | Install as a plugin |
+| Codex | `~/.agents/skills/optimizeit` | `.agents/skills/optimizeit` | Older versions: `~/.codex/skills` |
+| Cursor | `~/.cursor/skills/optimizeit` | `.cursor/skills/optimizeit` | Cursor also reads `.claude/skills` |
+| Gemini CLI | `~/.gemini/skills/optimizeit` | `.gemini/skills/optimizeit` | Install as an extension |
 
-Hepsi aynı açık [Agent Skills](https://agentskills.io/specification) biçimini (`SKILL.md` + destek dosyaları) kullanır; tek bir skill klasörü dört ajanda da çalışır.
+All four use the open [Agent Skills](https://agentskills.io/specification) format (`SKILL.md` plus supporting files), so a single skill folder works in every one of them.
 
-## Kurulum
+## Installation
 
-### Kurulum betiğiyle (tüm ajanlar)
+### With the install script (all agents)
 
 ```sh
 git clone https://github.com/aclxkatirant/OptimizeIT.git
 cd OptimizeIT
-sh install.sh                    # dört ajana, kullanıcı düzeyinde
-sh install.sh --hedef cursor     # yalnızca bir ajana
-sh install.sh --proje ../projem  # belirli bir projeye
+sh install.sh                          # all four agents, user level
+sh install.sh --target cursor          # a single agent
+sh install.sh --project ../my-project  # into a specific project
 ```
 
 Windows (PowerShell):
 
 ```powershell
 .\install.ps1
-.\install.ps1 -Hedef codex
-.\install.ps1 -Proje ..\projem
+.\install.ps1 -Target codex
+.\install.ps1 -Project ..\my-project
 ```
 
-`--hedef` / `-Hedef` değerleri: `claude`, `codex`, `cursor`, `gemini`, `hepsi` (varsayılan).
+`--target` / `-Target` values: `claude`, `codex`, `cursor`, `gemini`, `all` (default).
 
-### Claude Code plugin olarak
+### As a Claude Code plugin
 
 ```
 /plugin marketplace add aclxkatirant/OptimizeIT
 /plugin install optimizeit@optimizeit
 ```
 
-### Gemini CLI extension olarak
+### As a Gemini CLI extension
 
 ```sh
 gemini extensions install https://github.com/aclxkatirant/OptimizeIT
 ```
 
-> Gemini CLI'da Agent Skills deneysel bir özellik olabilir; çalışmıyorsa ayarlardan etkinleştirin ve `/skills reload` ile yeniden yükleyin, `/skills list` ile doğrulayın.
+> Agent Skills may be an experimental feature in your Gemini CLI version. If the skill does not appear, enable skills in settings, run `/skills reload`, and confirm with `/skills list`.
 
-## Kullanım
+## Usage
 
-Skill, performans ile ilgili isteklerde otomatik etkinleşir. Örnekler:
+The skill activates automatically on performance-related requests, for example:
 
-- "Bu projeyi optimize et."
-- "`/api/orders` endpoint'i çok yavaş, hızlandır."
-- "Uygulamanın açılışı 6 saniye sürüyor, darboğazı bul."
-- "Frontend bundle'ı çok büyük."
-- "Bellek sürekli artıyor, sızıntı var mı?"
+- "Optimize this project."
+- "The `/api/orders` endpoint is too slow, speed it up."
+- "Startup takes 6 seconds, find the bottleneck."
+- "The frontend bundle is huge."
+- "Memory keeps growing, is there a leak?"
 
-Doğrudan çağırmak için: Claude Code / Cursor'da `/optimizeit`, diğer ajanlarda "OptimizeIT skill'ini kullan".
+To invoke it directly: `/optimizeit` in Claude Code and Cursor; in other agents, ask to "use the OptimizeIT skill".
 
-## İş Akışı
+## Workflow
 
-| Faz | Ne yapılır |
+| Phase | What happens |
 |---|---|
-| 1. Keşif | Diller, framework'ler, mimari, giriş noktaları, VT, komutlar |
-| 2. Analiz | Kontrol listesi + profil; şüpheli desenler bağlamında değerlendirilir |
-| 3. Önceliklendirme | CRITICAL / HIGH / MEDIUM / LOW / INFORMATIONAL, değer/risk sıralaması |
-| 4. Temel ölçüm | Tekrarlanabilir komutla "önce" ölçümü |
-| 5. Optimizasyon | Tek seferde tek bulgu, davranış korunarak |
-| 6. Doğrulama | Test, lint, tip kontrolü, build, davranış karşılaştırması |
-| 7. Benchmark | Aynı koşullarda "sonra" ölçümü, gürültü analizi |
-| 8. Rapor | 10 bölümlü yapılandırılmış rapor |
+| 1. Discovery | Languages, frameworks, architecture, entry points, databases, commands |
+| 2. Analysis | Checklist plus profiling; suspicious patterns judged in context |
+| 3. Prioritization | CRITICAL / HIGH / MEDIUM / LOW / INFORMATIONAL, ordered by value/risk |
+| 4. Baseline | "Before" measurement with a repeatable command |
+| 5. Optimization | One finding at a time, behavior preserved |
+| 6. Validation | Tests, lint, type checks, build, behavior comparison |
+| 7. Benchmark | "After" measurement under the same conditions, noise analysis |
+| 8. Report | Structured 10-section report |
 
-## Güvenlik İlkeleri (özet)
+## Safety Principles (summary)
 
-- Benchmark sonucu asla uydurulmaz; ölçülmediyse "ölçülmedi" yazılır.
-- Çalıştırılmayan test için "geçti" denmez.
-- Yıkıcı veritabanı migration'ı asla otomatik uygulanmaz.
-- Public API, yapılandırma ve UI davranışı izinsiz değiştirilmez.
-- Performans için işlev veya güvenlik kontrolü kaldırılmaz.
-- Yeni bağımlılık, şema değişikliği ve davranış değişikliği için onay alınır.
+- Benchmark results are never invented; unmeasured improvements are reported as "not measured".
+- Tests that were not run are never reported as passing.
+- Destructive database migrations are never applied automatically.
+- Public APIs, configuration behavior and UI are not changed without authorization.
+- Functionality and security checks are never removed for performance.
+- New dependencies, schema changes and behavior changes require approval.
 
-## Depo Yapısı
+## Repository Layout
 
 ```
 skills/optimizeit/
-  SKILL.md                         Skill tanımı ve iş akışı (İngilizce)
-  references/                      Faz bazlı ayrıntılı rehberler (Türkçe)
-  scripts/kesif.py                 Proje keşif betiği
-  scripts/olcum.py                 Benchmark çalıştırma ve karşılaştırma betiği
-.claude-plugin/                    Claude Code plugin + marketplace tanımı
-gemini-extension.json              Gemini CLI extension tanımı
-install.sh / install.ps1           Çoklu ajan kurulum betikleri
+  SKILL.md                   Skill definition and workflow
+  references/                Detailed per-phase guides
+  scripts/discover.py        Project discovery script
+  scripts/measure.py         Benchmark runner and comparison script
+.claude-plugin/              Claude Code plugin and marketplace manifests
+gemini-extension.json        Gemini CLI extension manifest
+install.sh / install.ps1     Multi-agent install scripts
 ```
 
-Betikler yalnızca Python 3.8+ standart kütüphanesini kullanır.
+The scripts use only the Python 3.8+ standard library.
 
-## Lisans
+## License
 
 MIT

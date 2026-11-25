@@ -1,6 +1,6 @@
 ---
 name: optimizeit
-description: Use when an existing application is slow, heavy, resource-hungry or does not scale - slow startup, high CPU or memory, memory leaks, slow API responses, slow or N+1 database queries, large JavaScript bundles, unnecessary re-renders, event loop blocking, redundant network requests, bloated dependencies, slow builds - or when the user asks to optimize, speed up, profile, benchmark or find bottlenecks ("optimize et", "hızlandır", "performans", "OptimizeIT").
+description: Use when an existing application is slow, heavy, resource-hungry or does not scale - slow startup, high CPU or memory, memory leaks, slow API responses, slow or N+1 database queries, large JavaScript bundles, unnecessary re-renders, event loop blocking, redundant network requests, bloated dependencies, slow builds - or when the user asks to optimize, speed up, profile, benchmark or find bottlenecks, in any language, or invokes "OptimizeIT".
 ---
 
 # OptimizeIT
@@ -13,7 +13,7 @@ OptimizeIT works like a senior software performance engineer: it makes an existi
 
 OptimizeIT is not a best-practices checklist reader. **It analyzes, optimizes, tests, measures and reports.**
 
-**Language:** Write findings and the final report in the user's language. Supporting files in this skill are written in Turkish.
+**Language:** Write findings and the final report in the user's language.
 
 ## When to Use
 
@@ -58,7 +58,7 @@ Goal: understand the application before changing it.
 
 1. Run the discovery script (requires Python 3.8+; if unavailable, collect the same facts manually):
    ```
-   python <skill-dir>/scripts/kesif.py <project-dir>
+   python <skill-dir>/scripts/discover.py <project-dir>
    ```
    It reports languages, frameworks/libraries, package managers, build systems, entry points, database technologies, external services, test/lint/typecheck/build commands and the largest source files.
 2. **Verify** the output: actually read the manifests (`package.json`, `pyproject.toml`, `composer.json`, `pom.xml`, `*.csproj`, `go.mod`, `Cargo.toml`, ...) and the entry points.
@@ -72,12 +72,12 @@ Goal: understand the application before changing it.
 
 Goal: find real bottlenecks, not merely suspicious patterns.
 
-1. Walk the categories in `references/analiz-kontrol-listesi.md`.
+1. Walk the categories in `references/analysis-checklist.md`.
 2. Load the references that match the detected stack:
-   - Database present → `references/veritabani.md`
+   - Database present → `references/database.md`
    - Frontend present → `references/frontend.md`
    - Backend/service present → `references/backend.md`
-   - Language/framework-specific patterns and profilers → `references/diller-ve-frameworkler.md`
+   - Language/framework-specific patterns and profilers → `references/languages-and-frameworks.md`
 3. **Profile** when possible (CPU profile, heap snapshot, query log, `EXPLAIN`, bundle analysis). A profile beats a guess.
 4. Judge every suspicious pattern **in context**:
    - Is it on a hot path (called often, per request, inside a loop)?
@@ -106,10 +106,10 @@ Select the findings to implement. Anything requiring a schema change, public API
 Goal: pin down the "before" value with evidence.
 
 1. For each selected finding, pick the relevant metric (execution time, CPU, memory, startup, query duration, API latency, throughput, request count, bundle size, build duration).
-2. Build a repeatable measurement command (benchmark script, test, HTTP load tool, build command). Details: `references/olcum-ve-benchmark.md`.
+2. Build a repeatable measurement command (benchmark script, test, HTTP load tool, build command). Details: `references/measurement-and-benchmarking.md`.
 3. Run it through the measurement script:
    ```
-   python <skill-dir>/scripts/olcum.py calistir --ad before --tekrar 10 --isinma 2 --cikti .optimizeit/before.json -- <command>
+   python <skill-dir>/scripts/measure.py run --name before --runs 10 --warmup 2 --output .optimizeit/before.json -- <command>
    ```
 4. If measurement is impossible (no data, no service, no environment), record that and why. The improvement is then reported as **"not measured"**.
 
@@ -144,15 +144,15 @@ Rules:
 
 1. Rerun the **same command with the same data in the same environment** as Phase 4:
    ```
-   python <skill-dir>/scripts/olcum.py calistir --ad after --tekrar 10 --isinma 2 --cikti .optimizeit/after.json -- <command>
-   python <skill-dir>/scripts/olcum.py karsilastir .optimizeit/before.json .optimizeit/after.json
+   python <skill-dir>/scripts/measure.py run --name after --runs 10 --warmup 2 --output .optimizeit/after.json -- <command>
+   python <skill-dir>/scripts/measure.py compare .optimizeit/before.json .optimizeit/after.json
    ```
 2. If the difference is within measurement noise, say "no significant improvement"; do not claim one.
 3. If something got worse, reassess the change and revert if needed.
 
 ### Phase 8 — Report
 
-Produce the report from `references/rapor-sablonu.md`. Ten required sections:
+Produce the report from `references/report-template.md`. Ten required sections:
 
 1. Project Overview
 2. Technologies Detected
@@ -206,21 +206,21 @@ If one of these thoughts appears, stop and return to the relevant phase:
 
 | File | Load when |
 |---|---|
-| `references/analiz-kontrol-listesi.md` | Always, in Phase 2 |
-| `references/veritabani.md` | An ORM, SQL or NoSQL store is detected |
+| `references/analysis-checklist.md` | Always, in Phase 2 |
+| `references/database.md` | An ORM, SQL or NoSQL store is detected |
 | `references/frontend.md` | Browser code or a UI framework is detected |
 | `references/backend.md` | A server, API, worker or service is detected |
-| `references/diller-ve-frameworkler.md` | Choosing language/framework-specific patterns and profilers |
-| `references/olcum-ve-benchmark.md` | Phases 4 and 7 |
-| `references/rapor-sablonu.md` | Phase 8 |
+| `references/languages-and-frameworks.md` | Choosing language/framework-specific patterns and profilers |
+| `references/measurement-and-benchmarking.md` | Phases 4 and 7 |
+| `references/report-template.md` | Phase 8 |
 
 ## Scripts
 
 | Command | Purpose |
 |---|---|
-| `python scripts/kesif.py <dir> [--json]` | Project discovery: languages, frameworks, package managers, entry points, databases, commands |
-| `python scripts/olcum.py calistir ...` | Runs a command N times and records wall-time and peak-memory statistics (JSON) |
-| `python scripts/olcum.py karsilastir before.json after.json` | Compares two measurements; prints a Markdown table with a noise warning |
+| `python scripts/discover.py <dir> [--json]` | Project discovery: languages, frameworks, package managers, entry points, databases, commands |
+| `python scripts/measure.py run ...` | Runs a command N times and records wall-time and peak-memory statistics (JSON) |
+| `python scripts/measure.py compare before.json after.json` | Compares two measurements; prints a Markdown table with a noise warning |
 
 Scripts use only the Python standard library. Always invoke them through the interpreter (`python ...`; use `python3` where `python` is not available).
 

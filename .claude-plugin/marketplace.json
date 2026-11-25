@@ -7,7 +7,7 @@
     {
       "name": "optimizeit",
       "source": "./",
-      "description": "Mevcut uygulamaları analiz eden, optimize eden, test eden, ölçen ve raporlayan performans optimizasyon skill'i."
+      "description": "Performance optimization skill that analyzes, optimizes, tests, measures and reports on existing applications."
     }
   ]
 }
